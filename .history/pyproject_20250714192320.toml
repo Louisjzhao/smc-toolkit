@@ -1,0 +1,25 @@
+[project]
+name = "smc-toolkit"
+version = "0.1.0"
+description = "Smart Money Concepts (SMC) analysis toolkit for BOS, CHoCH, FVG, OB, and swing structure."
+readme = "README.md"
+authors = [
+  { name = "Luyi Zhao", email = "tysxchina@163.com" }
+]
+license = { text = "MIT" }
+keywords = ["trading", "smart-money", "bos", "choch", "fvg", "orderblock"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent"
+]
+requires-python = ">=3.7"
+
+
+[project.dependencies]
+numpy = "*"
+pandas = "*"
+matplotlib = "*"
+
+[project.urls]
+Homepage = "https://github.com/Louisjzhao/smc-toolkit"

@@ -1,0 +1,142 @@
+# SMC Toolkit
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![PyPI version](https://badge.fury.io/py/smc-toolkit.svg)](https://badge.fury.io/py/smc-toolkit)
+[![Python Version](https://img.shields.io/badge/python->=3.7-blue.svg)](https://www.python.org/downloads/)
+
+A simple, fast, and vectorized Python library for Smart Money Concept (SMC) analysis, perfect for local feature extraction, strategy backtesting, and quantitative analysis.
+
+This toolkit is designed for traders and developers who need to programmatically identify SMC structures without relying on third-party charting platforms. Its vectorized nature (powered by Pandas and NumPy) ensures high performance, making it suitable for processing large historical datasets for tasks like training Reinforcement Learning agents.
+
+## Features
+
+- **Vectorized & Fast**: Leverages Pandas and NumPy for efficient calculations.
+- **Core SMC Concepts**: Accurately identifies:
+  - Swing Highs & Lows
+  - Break of Structure (BOS)
+  - Change of Character (CHoCH)
+  - Order Blocks (OB)
+  - Fair Value Gaps (FVG)
+- **Multi-Structure Analysis**: Differentiates between primary (main) and internal market structures.
+- **Built-in Visualization**: Includes a ready-to-use Matplotlib function to instantly plot and verify results.
+
+## Installation
+
+```bash
+pip install smc-toolkit
+```
+
+## Quickstart
+
+Here is a brief example of how to analyze the NASDAQ index data from Yahoo Finance.
+
+```python
+import pandas as pd
+import smc_toolkit as smc  # alias for easier usage
+
+# === Load sample OHLCV data ===
+df = pd.read_csv("assets/data_example.csv", parse_dates=['date'])
+df = df.rename(columns=str.lower)  # ensure lowercase
+df.set_index(['code', 'date'], inplace=True)
+
+# === Step 1: Extract structure including internal swing points ===
+structure = df.groupby('code', group_keys=False).apply(
+    smc.process_smc_with_internal,
+    swing_size=50,       # swing detection window (external)
+    internal_size=5     # smaller window for internal structure
+)
+
+# === Step 2: Extract Order Blocks ===
+ob_df = structure.groupby('code').apply(smc.extract_ob_blocks).reset_index(drop=True)
+
+# === Step 3: Extract Fair Value Gaps ===
+fvg_df = structure.groupby('code').apply(smc.extract_fvg).reset_index(drop=True)
+
+# === Step 4: Plot results ===
+smc.plot_smc_structure(
+    code='000001.XSHE',
+    result_df=structure,
+    ob_df=ob_df,
+    fvg_df=fvg_df,
+    show_internal=True
+)
+
+```
+
+Running the code above will generate a plot similar to this:
+
+
+![SMC Toolkit Plot Example](assets/output.png)
+
+
+## Output DataFrames
+
+### `structure` DataFrame
+
+This is the main DataFrame with all candles and their calculated SMC attributes.
+
+| Column                | Description                                                                 |
+| --------------------- | --------------------------------------------------------------------------- |
+| `swing_h_l`           | `1` for a new Swing Low, `-1` for a new Swing High.                         |
+| `bos`                 | `1` for a bullish BOS, `-1` for a bearish BOS.                              |
+| `bos_level`           | The price level of the swing point that was broken.                         |
+| `choch`               | `2` for a bullish CHoCH, `-2` for a bearish CHoCH.                          |
+| `choch_level`         | The price level of the swing point that was broken to cause the CHoCH.      |
+| `int_...`             | The same columns prefixed with `int_` for the internal structure.           |
+
+### `ob_df` (Order Blocks) DataFrame
+
+Contains the identified Order Blocks.
+
+| Column       | Description                                                 |
+| ------------ | ----------------------------------------------------------- |
+| `ob_time`    | Timestamp of the candle that forms the Order Block.         |
+| `start_time` | Start time of the price leg that led to the CHoCH.          |
+| `end_time`   | End time of the price leg (timestamp of the CHoCH).         |
+| `ob_top`     | Top price level of the Order Block.                         |
+| `ob_bottom`  | Bottom price level of the Order Block.                      |
+| `ob_type`    | `bullish` or `bearish`.                                     |
+
+### `fvg_df` (Fair Value Gaps) DataFrame
+
+Contains the identified Fair Value Gaps.
+
+| Column      | Description                                                 |
+| ----------- | ----------------------------------------------------------- |
+| `fvg_type`  | `bullish` or `bearish`.                                     |
+| `fvg_top`   | Top price level of the FVG.                                 |
+| `fvg_bottom`| Bottom price level of the FVG.                              |
+| `fvg_mid`   | Mid-point price of the FVG.                                 |
+| `mitigated` | `True` if the price has returned to the FVG's mid-point.    |
+| `start_time`| Start timestamp of the 3-bar pattern forming the FVG.       |
+| `end_time`  | End timestamp of the 3-bar pattern.                         |
+
+
+## Plotting Legend
+
+The `plot_smc_structure` function uses the following visual cues:
+
+
+| Element               | Marker / Style                 | Color        | Meaning                                   |
+| --------------------- | ------------------------------ | ------------ | ----------------------------------------- |
+| Swing High            | Downward Triangle (`v`)        | ![#0000FF](https://placehold.co/15x15/0000FF/0000FF.png)         | A confirmed primary swing high point.     |
+| Swing Low             | Upward Triangle (`^`)          | ![#FFA500](https://placehold.co/15x15/FFA500/FFA500.png)       | A confirmed primary swing low point.      |
+| Bullish BOS           | Dashed Horizontal Line         | ![#0000FF](https://placehold.co/15x15/0000FF/0000FF.png)         | Break of Structure to the upside.         |
+| Bearish BOS           | Dashed Horizontal Line         | ![#FFA500](https://placehold.co/15x15/FFA500/FFA500.png)       | Break of Structure to the downside.       |
+| Bullish CHoCH         | Solid Horizontal Line          | ![#800080](https://placehold.co/15x15/800080/800080.png)       | Change of Character to bullish.           |
+| Bearish CHoCH         | Solid Horizontal Line          | ![#A52A2A](https://placehold.co/15x15/A52A2A/A52A2A.png)        | Change of Character to bearish.           |
+| Bullish Order Block   | Shaded Vertical Area           | ![#008000](https://placehold.co/15x15/008000/008000.png)        | A bullish order block zone.               |
+| Bearish Order Block   | Shaded Vertical Area           | ![#FF0000](https://placehold.co/15x15/FF0000/FF0000.png)          | A bearish order block zone.               |
+| Bullish FVG           | Shaded Vertical Area           | ![#0000FF](https://placehold.co/15x15/0000FF/0000FF.png)         | A bullish Fair Value Gap.                 |
+| Bearish FVG           | Shaded Vertical Area           | ![#FFA500](https://placehold.co/15x15/FFA500/FFA500.png)       | A bearish Fair Value Gap.                 |
+| Mitigated FVG         | Hatched Shaded Area            | ![#808080](https://placehold.co/15x15/808080/808080.png)       | An FVG that has been at least 50% filled. |
+| Internal Structures   | Smaller markers / Lighter lines| ![#808080](https://placehold.co/15x15/808080/808080.png)         | All of the above for internal structure.  |
+
+
+## License
+
+This project is licensed under the MIT License.
+
+
+
+
