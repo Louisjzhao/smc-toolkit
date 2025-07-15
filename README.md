@@ -28,7 +28,7 @@ pip install smc-toolkit
 
 ## Quickstart
 
-Here is a brief example of how to analyze the NASDAQ index data from Yahoo Finance.
+Here is a brief example of how to analyze the China A share OHLCV data.
 
 ```python
 import pandas as pd
